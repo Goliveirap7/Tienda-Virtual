@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { Producto, CategoriaProducto } from '@/types/database'
-import { Search, ShoppingBag, SlidersHorizontal, ChevronLeft, ChevronRight, Menu, X, Info, MapPin, MessageCircleQuestion, Lock } from 'lucide-react'
+import { Search, ShoppingBag, SlidersHorizontal, ChevronLeft, ChevronRight, Menu, X, Info, MapPin, MessageCircleQuestion, Lock, Heart } from 'lucide-react'
 import Link from 'next/link'
 
 // Replace this with your actual WhatsApp Number (with country code e.g. 51 for Peru)
@@ -10,14 +10,41 @@ const WHATSAPP_NUMBER = '51945899214'
 
 const categorias_base: CategoriaProducto[] = ['UTILES', 'HOGAR', 'TECNOLOGIA', 'DAMAS', 'NIÑOS', 'HOMBRES', 'NAVIDAD']
 
+const FAVORITES_KEY = 'fyg_favorites'
+
 export default function CatalogClient({ initialProducts }: { initialProducts: Producto[] }) {
   const [search, setSearch] = useState('')
   const [selectedProduct, setSelectedProduct] = useState<Producto | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [activeCategory, setActiveCategory] = useState<CategoriaProducto | 'TODO'>('TODO')
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return []
+    try { return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]') } catch { return [] }
+  })
+  const [activeCategory, setActiveCategory] = useState<CategoriaProducto | 'TODO' | 'FAVORITOS'>(() => {
+    if (typeof window === 'undefined') return 'TODO'
+    try {
+      const saved = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]')
+      return saved.length > 0 ? 'FAVORITOS' : 'TODO'
+    } catch { return 'TODO' }
+  })
   const [sortBy, setSortBy] = useState<'posicion' | 'nombre' | 'precio_asc' | 'precio_desc' | 'reciente' | 'antiguo'>('reciente')
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 20
+
+  const toggleFavorite = (e: React.MouseEvent, productId: string) => {
+    e.stopPropagation()
+    setFavorites(prev => {
+      const updated = prev.includes(productId)
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(updated))
+      // If last favorite removed, switch to TODO
+      if (updated.length === 0 && activeCategory === 'FAVORITOS') {
+        setActiveCategory('TODO')
+      }
+      return updated
+    })
+  }
 
   useEffect(() => {
     setCurrentPage(1)
@@ -49,7 +76,9 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
   // Filter products
   const filteredProducts = useMemo(() => {
     let result = initialProducts.filter(p => {
-      const matchCategory = activeCategory === 'TODO' || p.categoria === activeCategory
+      const matchCategory = activeCategory === 'TODO' || activeCategory === 'FAVORITOS'
+        ? activeCategory === 'FAVORITOS' ? favorites.includes(p.id) : true
+        : p.categoria === activeCategory
       const matchSearch = p.nombre.toLowerCase().includes(search.toLowerCase())
       return matchCategory && matchSearch
     })
@@ -132,6 +161,21 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
         {/* Categories Section */}
         <div className="flex overflow-x-auto pb-4 mb-8 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide space-x-3 items-center justify-start sm:justify-center" id="categorias">
+          {/* FAVORITOS tab — only visible when user has at least 1 favorite */}
+          {favorites.length > 0 && (
+            <button
+              onClick={() => setActiveCategory('FAVORITOS')}
+              className={`whitespace-nowrap px-6 py-2.5 rounded-full font-medium transition-all shadow-sm flex items-center gap-1.5 ${
+                activeCategory === 'FAVORITOS'
+                  ? 'bg-rose-500 text-white shadow-md scale-105'
+                  : 'bg-rose-50 text-rose-500 hover:bg-rose-100'
+              }`}
+            >
+              <Heart className="w-3.5 h-3.5" fill={activeCategory === 'FAVORITOS' ? 'white' : 'currentColor'} />
+              FAVORITOS
+            </button>
+          )}
+
           <button
             onClick={() => setActiveCategory('TODO')}
             className={`whitespace-nowrap px-6 py-2.5 rounded-full font-medium transition-all shadow-sm ${activeCategory === 'TODO'
@@ -219,6 +263,18 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
                       Agotado
                     </div>
                   )}
+                  {/* Favorite Heart Button */}
+                  <button
+                    onClick={(e) => toggleFavorite(e, product.id)}
+                    className="absolute top-2 right-2 p-1.5 rounded-full bg-white/80 backdrop-blur-sm shadow transition-transform hover:scale-110 active:scale-95"
+                    aria-label={favorites.includes(product.id) ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+                  >
+                    <Heart
+                      className="w-4 h-4 transition-colors"
+                      fill={favorites.includes(product.id) ? '#f43f5e' : 'none'}
+                      stroke={favorites.includes(product.id) ? '#f43f5e' : '#9ca3af'}
+                    />
+                  </button>
                 </div>
 
                 <div className="flex flex-col flex-1 p-4">
