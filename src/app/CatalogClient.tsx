@@ -15,7 +15,7 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
   const [selectedProduct, setSelectedProduct] = useState<Producto | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [activeCategory, setActiveCategory] = useState<CategoriaProducto | 'TODO'>('TODO')
-  const [sortBy, setSortBy] = useState<'posicion' | 'nombre' | 'precio_asc' | 'precio_desc'>('posicion')
+  const [sortBy, setSortBy] = useState<'posicion' | 'nombre' | 'precio_asc' | 'precio_desc' | 'reciente' | 'antiguo'>('reciente')
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 20
 
@@ -69,6 +69,12 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
       }
       if (sortBy === 'precio_desc') {
         return b.precio - a.precio
+      }
+      if (sortBy === 'reciente') {
+        return new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime()
+      }
+      if (sortBy === 'antiguo') {
+        return new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime()
       }
       return 0
     })
@@ -133,7 +139,7 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
               : 'bg-white text-neutral-600 hover:bg-neutral-100'
               }`}
           >
-            Todos
+            TODOS
           </button>
 
           {sortedCategories.map(cat => (
@@ -167,6 +173,8 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
               <option value="nombre">Ordenar por: Nombre (A-Z)</option>
               <option value="precio_asc">Precio: Menor a Mayor</option>
               <option value="precio_desc">Precio: Mayor a Menor</option>
+              <option value="reciente">Más reciente primero</option>
+              <option value="antiguo">Más antiguo primero</option>
             </select>
           </div>
         </div>
