@@ -2,6 +2,9 @@
 
 **Demo en vivo:** [incomparable-frangipane-01298a.netlify.app](https://incomparable-frangipane-01298a.netlify.app)
 
+![Captura de la Tienda Virtual F&G](https://res.cloudinary.com/dvaeqzm95/image/upload/v1772914834/oudwr8tsd5rm9h8vxujg.png)
+![Captura de la Tienda Virtual F&G](https://res.cloudinary.com/dvaeqzm95/image/upload/v1772914978/xh6gryaaazz41kxav8z2.png)
+
 ---
 
 ## 🧠 Historia del proyecto
