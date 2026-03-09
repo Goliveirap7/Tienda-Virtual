@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { Producto, CategoriaProducto } from '@/types/database'
-import { Search, ShoppingBag, SlidersHorizontal, ChevronLeft, ChevronRight, Menu, X, Info, MapPin, MessageCircleQuestion, Lock, Heart } from 'lucide-react'
+import { Search, ShoppingBag, SlidersHorizontal, ChevronLeft, ChevronRight, Menu, X, Info, MapPin, MessageCircleQuestion, Lock, Heart, ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 
 // Replace this with your actual WhatsApp Number (with country code e.g. 51 for Peru)
@@ -11,25 +11,76 @@ const WHATSAPP_NUMBER = '51945899214'
 const categorias_base: CategoriaProducto[] = ['UTILES', 'HOGAR', 'TECNOLOGIA', 'DAMAS', 'NIÑOS', 'HOMBRES', 'NAVIDAD']
 
 const FAVORITES_KEY = 'fyg_favorites'
+const CART_KEY = 'fyg_cart'
+
+type CartItem = {
+  id: string
+  nombre: string
+  precio: number
+  cantidad: number
+}
 
 export default function CatalogClient({ initialProducts }: { initialProducts: Producto[] }) {
   const [search, setSearch] = useState('')
   const [selectedProduct, setSelectedProduct] = useState<Producto | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return []
-    try { return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]') } catch { return [] }
-  })
-  const [activeCategory, setActiveCategory] = useState<CategoriaProducto | 'TODO' | 'FAVORITOS'>(() => {
-    if (typeof window === 'undefined') return 'TODO'
-    try {
-      const saved = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]')
-      return saved.length > 0 ? 'FAVORITOS' : 'TODO'
-    } catch { return 'TODO' }
-  })
+  const [favorites, setFavorites] = useState<string[]>([])
+  const [activeCategory, setActiveCategory] = useState<CategoriaProducto | 'TODO' | 'FAVORITOS'>('TODO')
   const [sortBy, setSortBy] = useState<'posicion' | 'nombre' | 'precio_asc' | 'precio_desc' | 'reciente' | 'antiguo'>('reciente')
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 20
+  const [cart, setCart] = useState<CartItem[]>([])
+  const [isCartOpen, setIsCartOpen] = useState(false)
+
+  // Load persisted state from localStorage after mount (avoids SSR hydration mismatch)
+  useEffect(() => {
+    try {
+      const savedFavs: string[] = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]')
+      const savedCart: CartItem[] = JSON.parse(localStorage.getItem(CART_KEY) || '[]')
+      setFavorites(savedFavs)
+      setCart(savedCart)
+    } catch { /* ignore corrupt data */ }
+  }, [])
+
+  const saveCart = (items: CartItem[]) => {
+    setCart(items)
+    localStorage.setItem(CART_KEY, JSON.stringify(items))
+  }
+
+  const addToCart = (e: React.MouseEvent, product: { id: string; nombre: string; precio: number }) => {
+    e.stopPropagation()
+    setCart(prev => {
+      const existing = prev.find(i => i.id === product.id)
+      const updated = existing
+        ? prev.map(i => i.id === product.id ? { ...i, cantidad: i.cantidad + 1 } : i)
+        : [...prev, { id: product.id, nombre: product.nombre, precio: product.precio, cantidad: 1 }]
+      localStorage.setItem(CART_KEY, JSON.stringify(updated))
+      return updated
+    })
+  }
+
+  const removeFromCart = (id: string) => {
+    setCart(prev => { const updated = prev.filter(i => i.id !== id); localStorage.setItem(CART_KEY, JSON.stringify(updated)); return updated })
+  }
+
+  const updateQty = (id: string, delta: number) => {
+    setCart(prev => {
+      const updated = prev.map(i => i.id === id ? { ...i, cantidad: Math.max(1, i.cantidad + delta) } : i)
+      localStorage.setItem(CART_KEY, JSON.stringify(updated))
+      return updated
+    })
+  }
+
+  const cartTotal = cart.reduce((sum, i) => sum + i.precio * i.cantidad, 0)
+  const cartCount = cart.reduce((sum, i) => sum + i.cantidad, 0)
+
+  const handleCartCheckout = () => {
+    if (cart.length === 0) return
+    const lines = cart.map(i => `• ${i.nombre} x${i.cantidad} - S/ ${(i.precio * i.cantidad).toFixed(2)}`).join('%0A')
+    const total = `TOTAL: S/ ${cartTotal.toFixed(2)}`
+    const msg = `Hola, deseo adquirir estos productos:%0A%0A${lines}%0A%0A${total}`
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, '_blank')
+  }
 
   const toggleFavorite = (e: React.MouseEvent, productId: string) => {
     e.stopPropagation()
@@ -49,6 +100,26 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
   useEffect(() => {
     setCurrentPage(1)
   }, [activeCategory, search, sortBy])
+
+  // Debounce: wait 500ms after user stops typing, then track the search
+  useEffect(() => {
+    if (search.trim().length < 2) return
+    const timer = setTimeout(() => {
+      const count = initialProducts.filter(p =>
+        p.nombre.toLowerCase().includes(search.toLowerCase())
+      ).length
+      console.log('[debounce] Sending search:', search.trim(), '| resultados:', count)
+      fetch('/api/track-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ termino: search.trim(), resultados: count }),
+      })
+        .then(r => console.log('[debounce] Response status:', r.status))
+        .catch(err => console.error('[debounce] Fetch error:', err))
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [search, initialProducts])
+
 
   // Derive categories with priority sorting and filter empty ones
   const sortedCategories = useMemo(() => {
@@ -274,6 +345,14 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
                       fill={favorites.includes(product.id) ? '#f43f5e' : 'none'}
                       stroke={favorites.includes(product.id) ? '#f43f5e' : '#9ca3af'}
                     />
+                  </button>
+                  {/* Add to Cart Button — bottom-right of image */}
+                  <button
+                    onClick={(e) => addToCart(e, product)}
+                    className="absolute bottom-2 right-2 p-2 rounded-full bg-black/70 text-white backdrop-blur-sm shadow hover:bg-black transition-all hover:scale-110 active:scale-95"
+                    aria-label="Añadir al carrito"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
                   </button>
                 </div>
 
@@ -516,6 +595,28 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
                 <span className="text-3xl font-bold text-black">
                   S/ {selectedProduct.precio.toFixed(2)}
                 </span>
+                <div className="flex items-center gap-2">
+                  {/* Favorite button in modal */}
+                  <button
+                    onClick={(e) => toggleFavorite(e, selectedProduct.id)}
+                    className="p-2.5 rounded-full border border-neutral-200 hover:border-rose-300 transition-colors"
+                    aria-label="Añadir a favoritos"
+                  >
+                    <Heart
+                      className="w-5 h-5 transition-colors"
+                      fill={favorites.includes(selectedProduct.id) ? '#f43f5e' : 'none'}
+                      stroke={favorites.includes(selectedProduct.id) ? '#f43f5e' : '#9ca3af'}
+                    />
+                  </button>
+                  {/* Add to cart button in modal */}
+                  <button
+                    onClick={(e) => { addToCart(e, selectedProduct); setSelectedProduct(null); setIsCartOpen(true) }}
+                    className="p-2.5 rounded-full border border-neutral-200 hover:border-black hover:bg-black hover:text-white transition-colors"
+                    aria-label="Añadir al carrito"
+                  >
+                    <ShoppingCart className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
               <button
                 onClick={() => handleBuy(selectedProduct.nombre, selectedProduct.image_url)}
@@ -596,9 +697,24 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
         </div>
       )}
 
-      {/* Floating WhatsApp Button */}
-      {/* Hide the floating button if modal or menu is open to avoid clutter */}
+      {/* Floating Cart Button — bottom left */}
       {!selectedProduct && !isMobileMenuOpen && (
+        <button
+          onClick={() => setIsCartOpen(true)}
+          className="fixed bottom-6 left-6 bg-black text-white p-4 rounded-full shadow-2xl hover:bg-neutral-800 hover:scale-110 transition-all duration-300 z-50 flex items-center justify-center"
+          title="Ver carrito"
+        >
+          <ShoppingCart className="w-6 h-6" />
+          {cartCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+              {cartCount > 99 ? '99+' : cartCount}
+            </span>
+          )}
+        </button>
+      )}
+
+      {/* Floating WhatsApp Button — bottom right (always visible) */}
+      {!isMobileMenuOpen && (
         <a
           href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hola, me gustaría recibir más información sobre sus productos.')}`}
           target="_blank"
@@ -610,6 +726,91 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
             <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.066.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564c.173.087.289.129.332.202.043.073.043.423-.101.827z" />
           </svg>
         </a>
+      )}
+
+      {/* Cart Modal */}
+      {isCartOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={() => setIsCartOpen(false)}
+        >
+          <div
+            className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100">
+              <div className="flex items-center gap-2">
+                <ShoppingCart className="w-5 h-5" />
+                <h2 className="text-lg font-bold">Mi Carrito</h2>
+                {cartCount > 0 && (
+                  <span className="bg-neutral-100 text-neutral-600 text-xs font-semibold px-2 py-0.5 rounded-full">{cartCount} items</span>
+                )}
+              </div>
+              <button onClick={() => setIsCartOpen(false)} className="p-2 rounded-full hover:bg-neutral-100 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            {cart.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center py-16 text-neutral-400">
+                <ShoppingCart className="w-16 h-16 mb-4 opacity-20" />
+                <p className="font-medium">Tu carrito está vacío</p>
+                <p className="text-sm mt-1">Agrega productos usando el ícono 🛒</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                  {cart.map(item => (
+                    <div key={item.id} className="flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-neutral-800 line-clamp-2 leading-tight">{item.nombre}</p>
+                        <p className="text-xs text-neutral-500 mt-0.5">S/ {item.precio.toFixed(2)} c/u</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => updateQty(item.id, -1)} className="p-1 rounded-full hover:bg-neutral-100 transition-colors">
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="w-6 text-center text-sm font-semibold">{item.cantidad}</span>
+                        <button onClick={() => updateQty(item.id, 1)} className="p-1 rounded-full hover:bg-neutral-100 transition-colors">
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <div className="text-sm font-bold text-black w-16 text-right shrink-0">
+                        S/ {(item.precio * item.cantidad).toFixed(2)}
+                      </div>
+                      <button onClick={() => removeFromCart(item.id)} className="p-1 rounded-full hover:bg-red-50 text-neutral-400 hover:text-red-500 transition-colors shrink-0">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Footer */}
+                <div className="px-6 py-5 border-t border-neutral-100 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-base font-semibold text-neutral-700">Total</span>
+                    <span className="text-2xl font-bold text-black">S/ {cartTotal.toFixed(2)}</span>
+                  </div>
+                  <button
+                    onClick={handleCartCheckout}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-2xl transition-colors shadow-lg shadow-green-200 flex items-center justify-center gap-2"
+                  >
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.066.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564c.173.087.289.129.332.202.043.073.043.423-.101.827z" /></svg>
+                    Enviar pedido por WhatsApp
+                  </button>
+                  <button
+                    onClick={() => { setCart([]); localStorage.removeItem(CART_KEY) }}
+                    className="w-full text-sm text-neutral-400 hover:text-red-500 transition-colors py-1"
+                  >
+                    Vaciar carrito
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   )

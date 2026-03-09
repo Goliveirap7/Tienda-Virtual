@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Package, Image as ImageIcon } from 'lucide-react'
+import { Package, Image as ImageIcon, BarChart2 } from 'lucide-react'
 import LogoutButton from '@/components/LogoutButton'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -24,6 +24,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Link href="/admin/editar-imagenes" className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 font-medium rounded-md transition-colors">
               <ImageIcon className="w-5 h-5 mr-3" />
               Editar Imágenes
+            </Link>
+            <Link href="/admin/analytics" className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 font-medium rounded-md transition-colors">
+              <BarChart2 className="w-5 h-5 mr-3" />
+              Analíticas
             </Link>
           </nav>
           <div className="p-4 border-t border-gray-200">
