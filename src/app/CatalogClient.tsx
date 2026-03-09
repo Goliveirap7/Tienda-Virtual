@@ -108,15 +108,12 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
       const count = initialProducts.filter(p =>
         p.nombre.toLowerCase().includes(search.toLowerCase())
       ).length
-      console.log('[debounce] Sending search:', search.trim(), '| resultados:', count)
       fetch('/api/track-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ termino: search.trim(), resultados: count }),
-      })
-        .then(r => console.log('[debounce] Response status:', r.status))
-        .catch(err => console.error('[debounce] Fetch error:', err))
-    }, 500)
+    })
+    }, 1000)
     return () => clearTimeout(timer)
   }, [search, initialProducts])
 
