@@ -197,7 +197,7 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
   const handleBuy = (productId: string, productName: string) => {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://incomparable-frangipane-01298a.netlify.app'
     const productUrl = `${siteUrl}/producto/${productId}`
-    const text = `Hola, estoy interesado en el producto: *${productName}*. ¿Me podría brindar más información?\n\n${productUrl}`
+    const text = `${productUrl}\n\nHola, estoy interesado en el producto: *${productName}*. ¿Me podría brindar más información?`
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`, '_blank')
   }
 
