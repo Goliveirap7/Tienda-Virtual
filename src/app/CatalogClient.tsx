@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { Producto, CategoriaProducto } from '@/types/database'
 import { Search, ShoppingBag, SlidersHorizontal, ChevronLeft, ChevronRight, Menu, X, Info, MapPin, MessageCircleQuestion, Lock, Heart, ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react'
 import Link from 'next/link'
@@ -43,6 +43,15 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
     } catch { /* ignore corrupt data */ }
   }, [])
 
+  // Toast notification
+  const [toastMsg, setToastMsg] = useState<string | null>(null)
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const showToast = (msg: string) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+    setToastMsg(msg)
+    toastTimer.current = setTimeout(() => setToastMsg(null), 2000)
+  }
+
   const saveCart = (items: CartItem[]) => {
     setCart(items)
     localStorage.setItem(CART_KEY, JSON.stringify(items))
@@ -58,6 +67,7 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
       localStorage.setItem(CART_KEY, JSON.stringify(updated))
       return updated
     })
+    showToast('🛒 Añadido al carrito')
   }
 
   const removeFromCart = (id: string) => {
@@ -86,14 +96,15 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
   const toggleFavorite = (e: React.MouseEvent, productId: string) => {
     e.stopPropagation()
     setFavorites(prev => {
-      const updated = prev.includes(productId)
+      const isFav = prev.includes(productId)
+      const updated = isFav
         ? prev.filter(id => id !== productId)
         : [...prev, productId]
       localStorage.setItem(FAVORITES_KEY, JSON.stringify(updated))
-      // If last favorite removed, switch to TODO
       if (updated.length === 0 && activeCategory === 'FAVORITOS') {
         setActiveCategory('TODO')
       }
+      showToast(isFav ? '💔 Eliminado de favoritos' : '❤️ Añadido a favoritos')
       return updated
     })
   }
@@ -608,7 +619,7 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
                   </button>
                   {/* Add to cart button in modal */}
                   <button
-                    onClick={(e) => { addToCart(e, selectedProduct); setSelectedProduct(null); setIsCartOpen(true) }}
+                    onClick={(e) => addToCart(e, selectedProduct)}
                     className="p-2.5 rounded-full border border-neutral-200 hover:border-black hover:bg-black hover:text-white transition-colors"
                     aria-label="Añadir al carrito"
                   >
@@ -810,6 +821,16 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
           </div>
         </div>
       )}
+
+      {/* Toast notification */}
+      <div
+        className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-[200] transition-all duration-300 pointer-events-none
+          ${toastMsg ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+      >
+        <div className="bg-gray-900 text-white text-sm font-medium px-5 py-2.5 rounded-full shadow-xl whitespace-nowrap">
+          {toastMsg}
+        </div>
+      </div>
     </div>
   )
 }
