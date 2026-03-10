@@ -124,7 +124,7 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ termino: search.trim(), resultados: count }),
-    })
+      })
     }, 1000)
     return () => clearTimeout(timer)
   }, [search, initialProducts])
@@ -135,7 +135,7 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
     // Find highest priority and count per category
     const priorities: Record<string, number> = {}
     const counts: Record<string, number> = {}
-    
+
     categorias_base.forEach(cat => {
       priorities[cat] = 0
       counts[cat] = 0
@@ -194,8 +194,10 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE)
   const paginatedProducts = filteredProducts.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
 
-  const handleBuy = (productName: string, productImageUrl: string | null) => {
-    const text = `Hola, estoy interesado en el producto: *${productName}*. ¿Me podría brindar más información?`
+  const handleBuy = (productId: string, productName: string) => {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://incomparable-frangipane-01298a.netlify.app'
+    const productUrl = `${siteUrl}/producto/${productId}`
+    const text = `Hola, estoy interesado en el producto: *${productName}*. ¿Me podría brindar más información?\n\n${productUrl}`
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`, '_blank')
   }
 
@@ -204,9 +206,9 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
       {/* Hero Section */}
       <section className="bg-black text-white pt-2 pb-8 sm:pt-3 sm:pb-12 px-6 sm:px-12 text-center relative overflow-hidden" id="inicio">
         <div className="absolute inset-0 bg-gradient-to-r from-neutral-900 to-neutral-800 opacity-90 z-0"></div>
-        
+
         {/* Hamburger Menu Button */}
-        <button 
+        <button
           onClick={() => setIsMobileMenuOpen(true)}
           className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 p-2 text-white/80 hover:text-white transition-colors"
           aria-label="Abrir menú"
@@ -245,11 +247,10 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
           {favorites.length > 0 && (
             <button
               onClick={() => setActiveCategory('FAVORITOS')}
-              className={`whitespace-nowrap px-6 py-2.5 rounded-full font-medium transition-all shadow-sm flex items-center gap-1.5 ${
-                activeCategory === 'FAVORITOS'
-                  ? 'bg-rose-500 text-white shadow-md scale-105'
-                  : 'bg-rose-50 text-rose-500 hover:bg-rose-100'
-              }`}
+              className={`whitespace-nowrap px-6 py-2.5 rounded-full font-medium transition-all shadow-sm flex items-center gap-1.5 ${activeCategory === 'FAVORITOS'
+                ? 'bg-rose-500 text-white shadow-md scale-105'
+                : 'bg-rose-50 text-rose-500 hover:bg-rose-100'
+                }`}
             >
               <Heart className="w-3.5 h-3.5" fill={activeCategory === 'FAVORITOS' ? 'white' : 'currentColor'} />
               FAVORITOS
@@ -376,7 +377,7 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
                     </span>
                   </div>
                   <button
-                    onClick={(e) => { e.stopPropagation(); handleBuy(product.nombre, product.image_url); }}
+                    onClick={(e) => { e.stopPropagation(); handleBuy(product.id, product.nombre); }}
                     className="mt-4 w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 rounded-xl transition-colors shadow-sm shadow-green-200"
                   >
                     Comprar ahora
@@ -427,7 +428,7 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
           <div className="text-center mb-10">
             <h2 className="text-3xl font-bold text-neutral-800">Visítanos</h2>
             <p className="text-neutral-500 mt-2 max-w-2xl mx-auto">
-              Encuentra nuestra tienda principal en Mz. H1 Lt 11 Sec E2 PPN Pachacutec Ventanilla - Callao 
+              Encuentra nuestra tienda principal en Mz. H1 Lt 11 Sec E2 PPN Pachacutec Ventanilla - Callao
               <br className="hidden sm:block" />
               <span className="font-medium text-neutral-700">(Frente a la puerta N° 05 del Mercado Unificados)</span>
             </p>
@@ -462,15 +463,15 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
       <section className="bg-white border-t border-neutral-100 py-20" id="informacion">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-            
+
             {/* About Us */}
             <div className="flex flex-col justify-center">
               <div className="mb-8 w-full">
-                 <img 
-                   src="https://res.cloudinary.com/dvaeqzm95/image/upload/v1741327122/productos_tienda/logo_fyg.png" 
-                   alt="F&G Logo" 
-                   className="w-full max-w-[280px] sm:max-w-xs md:max-w-sm h-28 sm:h-32 md:h-40 object-contain object-left saturate-150 drop-shadow-lg" 
-                 />
+                <img
+                  src="https://res.cloudinary.com/dvaeqzm95/image/upload/v1741327122/productos_tienda/logo_fyg.png"
+                  alt="F&G Logo"
+                  className="w-full max-w-[280px] sm:max-w-xs md:max-w-sm h-28 sm:h-32 md:h-40 object-contain object-left saturate-150 drop-shadow-lg"
+                />
               </div>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-neutral-900 tracking-tight leading-tight mb-6">
                 Sobre Nosotros
@@ -496,7 +497,7 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
                 </svg>
                 Preguntas Frecuentes
               </h3>
-              
+
               <div className="space-y-6">
                 <div className="bg-white p-5 rounded-2xl shadow-sm border border-neutral-100">
                   <h4 className="font-bold text-neutral-900 flex gap-2 items-start mb-2">
@@ -553,7 +554,7 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
           </p>
           <div className="h-px w-24 bg-neutral-800 mb-8"></div>
           <p className="text-sm font-medium mb-1">
-             F&G Importaciones &copy; {new Date().getFullYear()}
+            F&G Importaciones &copy; {new Date().getFullYear()}
           </p>
           <p className="text-xs font-medium text-neutral-500">
             Developed by <a href="https://github.com/Goliveirap7" target="_blank" rel="noreferrer" className="text-neutral-400 hover:text-green-400 transition-colors underline decoration-neutral-700 underline-offset-4">Shio</a>
@@ -563,37 +564,37 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
 
       {/* Product Lightbox Modal */}
       {selectedProduct && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4 sm:p-6"
           onClick={() => setSelectedProduct(null)}
         >
-          <div 
+          <div
             className="bg-white rounded-3xl w-full max-w-sm sm:max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative aspect-[4/5] bg-neutral-100">
-               {selectedProduct.image_url ? (
-                 <img
-                   src={optimizeCloudinaryUrl(selectedProduct.image_url)}
-                   alt={selectedProduct.nombre}
-                   decoding="async"
-                   className="object-cover w-full h-full"
-                 />
-               ) : (
-                 <div className="w-full h-full flex items-center justify-center text-neutral-300">
-                   <ShoppingBag className="w-16 h-16" />
-                 </div>
-               )}
-               {/* Stock Indicator */}
-               {selectedProduct.stock > 0 ? (
-                 <div className="absolute top-4 left-4 bg-green-500 text-white text-sm font-bold px-3 py-1.5 rounded-md shadow-md">
-                   Disponible
-                 </div>
-               ) : (
-                 <div className="absolute top-4 left-4 bg-red-500 text-white text-sm font-bold px-3 py-1.5 rounded-md shadow-md">
-                   Agotado
-                 </div>
-               )}
+              {selectedProduct.image_url ? (
+                <img
+                  src={optimizeCloudinaryUrl(selectedProduct.image_url)}
+                  alt={selectedProduct.nombre}
+                  decoding="async"
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-neutral-300">
+                  <ShoppingBag className="w-16 h-16" />
+                </div>
+              )}
+              {/* Stock Indicator */}
+              {selectedProduct.stock > 0 ? (
+                <div className="absolute top-4 left-4 bg-green-500 text-white text-sm font-bold px-3 py-1.5 rounded-md shadow-md">
+                  Disponible
+                </div>
+              ) : (
+                <div className="absolute top-4 left-4 bg-red-500 text-white text-sm font-bold px-3 py-1.5 rounded-md shadow-md">
+                  Agotado
+                </div>
+              )}
             </div>
             <div className="p-6">
               <span className="text-sm font-semibold text-neutral-400 mb-2 block">{selectedProduct.categoria}</span>
@@ -628,7 +629,7 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
                 </div>
               </div>
               <button
-                onClick={() => handleBuy(selectedProduct.nombre, selectedProduct.image_url)}
+                onClick={() => handleBuy(selectedProduct.id, selectedProduct.nombre)}
                 className="w-full bg-[#25D366] hover:bg-green-500 text-white font-bold text-lg py-4 rounded-2xl transition-colors shadow-lg shadow-green-200/50 flex items-center justify-center gap-2"
               >
                 Comprar ahora
@@ -642,7 +643,7 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-[150] bg-black text-white flex flex-col animate-in slide-in-from-right duration-300">
           <div className="flex justify-end p-6">
-            <button 
+            <button
               onClick={() => setIsMobileMenuOpen(false)}
               className="text-white/70 hover:text-white transition-colors"
               aria-label="Cerrar menú"
@@ -650,40 +651,40 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
               <X className="w-10 h-10" />
             </button>
           </div>
-          
+
           <div className="flex flex-col items-center justify-center flex-1 space-y-8 p-6 text-xl sm:text-2xl font-medium tracking-wide">
-            <a 
-              href="#inicio" 
+            <a
+              href="#inicio"
               onClick={() => setIsMobileMenuOpen(false)}
               className="hover:text-amber-400 transition-colors"
             >
               Inicio
             </a>
-            <a 
-              href="#categorias" 
+            <a
+              href="#categorias"
               onClick={() => setIsMobileMenuOpen(false)}
               className="hover:text-amber-400 transition-colors"
             >
               Catálogo
             </a>
-            <a 
-              href="#visitanos" 
+            <a
+              href="#visitanos"
               onClick={() => setIsMobileMenuOpen(false)}
               className="hover:text-amber-400 transition-colors flex items-center gap-2"
             >
               <MapPin className="w-6 h-6" />
               Visítanos
             </a>
-            <a 
-              href="#informacion" 
+            <a
+              href="#informacion"
               onClick={() => setIsMobileMenuOpen(false)}
               className="hover:text-amber-400 transition-colors flex items-center gap-2"
             >
               <Info className="w-6 h-6" />
               Sobre Nosotros
             </a>
-            <a 
-              href="#informacion" 
+            <a
+              href="#informacion"
               onClick={() => setIsMobileMenuOpen(false)}
               className="hover:text-amber-400 transition-colors flex items-center gap-2"
             >
@@ -693,15 +694,15 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
           </div>
 
           <div className="p-8 border-t border-white/10 flex flex-col items-center gap-4">
-             {/* Discreet Admin Link */}
-             <Link 
-               href="/admin" 
-               className="text-white/30 hover:text-white/70 text-sm flex items-center gap-2 transition-colors mb-4"
-             >
-               <Lock className="w-4 h-4" />
-               Administración
-             </Link>
-             <p className="text-white/50 text-xs">F&G Importaciones © {new Date().getFullYear()}</p>
+            {/* Discreet Admin Link */}
+            <Link
+              href="/admin"
+              className="text-white/30 hover:text-white/70 text-sm flex items-center gap-2 transition-colors mb-4"
+            >
+              <Lock className="w-4 h-4" />
+              Administración
+            </Link>
+            <p className="text-white/50 text-xs">F&G Importaciones © {new Date().getFullYear()}</p>
           </div>
         </div>
       )}
