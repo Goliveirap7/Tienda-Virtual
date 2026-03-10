@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { Producto, CategoriaProducto } from '@/types/database'
 import { Search, ShoppingBag, SlidersHorizontal, ChevronLeft, ChevronRight, Menu, X, Info, MapPin, MessageCircleQuestion, Lock, Heart, ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react'
 import Link from 'next/link'
+import { optimizeCloudinaryUrl } from '@/utils/cloudinary'
 
 // Replace this with your actual WhatsApp Number (with country code e.g. 51 for Peru)
 const WHATSAPP_NUMBER = '51945899214'
@@ -204,7 +205,7 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
 
         <div className="relative z-10 max-w-3xl mx-auto flex flex-col items-center">
           <img
-            src="https://res.cloudinary.com/dvaeqzm95/image/upload/v1741327122/productos_tienda/logo_fyg.png"
+            src={optimizeCloudinaryUrl("https://res.cloudinary.com/dvaeqzm95/image/upload/v1741327122/productos_tienda/logo_fyg.png")}
             alt="F&G Importaciones Logo"
             className="w-48 sm:w-64 md:w-80 h-auto object-contain mb-4 drop-shadow-2xl"
           />
@@ -311,7 +312,7 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
                 <div className="relative aspect-[4/5] bg-neutral-100 overflow-hidden">
                   {product.image_url ? (
                     <img
-                      src={product.image_url}
+                      src={optimizeCloudinaryUrl(product.image_url)}
                       alt={product.nombre}
                       decoding="async"
                       className="object-cover w-full h-full absolute inset-0 group-hover:scale-105 transition-transform duration-500"
@@ -562,7 +563,7 @@ export default function CatalogClient({ initialProducts }: { initialProducts: Pr
             <div className="relative aspect-[4/5] bg-neutral-100">
                {selectedProduct.image_url ? (
                  <img
-                   src={selectedProduct.image_url}
+                   src={optimizeCloudinaryUrl(selectedProduct.image_url)}
                    alt={selectedProduct.nombre}
                    decoding="async"
                    className="object-cover w-full h-full"
