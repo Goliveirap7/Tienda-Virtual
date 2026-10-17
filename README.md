@@ -51,28 +51,3 @@ Para evitar tocar el código cada vez que hay cambios en inventario, construí u
 
 La tienda funciona tanto en escritorio como en dispositivos móviles, con menú hamburguesa en móvil y grid adaptable a distintas resoluciones.
 
----
-
-## 📂 Variables de entorno requeridas
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
-```
-
----
-
-## 🚀 Cómo correr localmente
-
-```bash
-npm install
-npm run dev
-```
-
-Abrir [http://localhost:3000](http://localhost:3000) en el navegador.
-
-El panel de administrador está en `/admin/login`.
